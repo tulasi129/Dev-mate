@@ -4,8 +4,8 @@ const app = express()
 
 
 
-app.get("/user", (req,res)=>{
-    res.send("User info.....")
+app.get("/user/:userId", (req,res,next)=>{
+   res.send(`User id is ${req.params.userId}, username is ${req.query.username}, password is ${req.query.password}`)
 })
 
 app.post("/user", (req,res)=>{
@@ -13,7 +13,7 @@ app.post("/user", (req,res)=>{
 })
 
 app.delete("/user", (req,res)=>{
-    res.send("User deleted successfully")
+    res.send("User deleted successfully")``
 })
 
 app.patch("/user", (req,res)=>{
