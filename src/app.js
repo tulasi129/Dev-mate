@@ -1,51 +1,29 @@
 const express = require("express");
 
 const app = express();
+const auth = require("./middleware/auth");
+// Hanlding error through try catch block
+app.get("/test", (req, res, next) => {
+try{
+    throw new Error("Unauthorized");
 
-
-
-//Hanlding multiple middleware functions ( route handlers ) for a single route
-
-// app.use('/router',rh1,[rh2,rh3],rh4,rh5) // Grouping route handlers for a single route
-app.use(
-  "/user",
-  (req, res, next) => {
-    next();
-  },
-);
-
-app.get(
-  "/user",
-  (req, res, next) => {
-    next();
-  },
-  (req, res, next) => {
-    next();
-  },
-  (req, res, next) => {
-    next();
-  },
-  (req, res, next) => {
-    res.send("response 4");
-  },
-);
-
-app.get("/user/:userId", (req, res, next) => {
-  res.send(
-    `User id is ${req.params.userId}, username is ${req.query.username}, password is ${req.query.password}`,
-  );
+}
+catch(err){
+    res.status(401).send("Something went wrong");
+}
 });
 
-app.post("/user", (req, res) => {
-  res.send("Usrer created successfully");
+app.get("/admin", auth, (req, res, next) => {
+  res.send("Welcome to admin page");
 });
 
-app.delete("/user", (req, res) => {
-  res.send("User deleted successfully")``;
+app.get("/user", (req, res, next) => {
+  throw new Error("Unauthorized");
 });
 
-app.patch("/user", (req, res) => {
-  res.send("User updated successfully");
+// wILD CARD ERROR HANLDING MIDDLEWARE WHEN WE HAVE MULTIPLE ROUTES AND WE WANT TO HANDLE ERROR WIHTOUT NO TRY , CATCH BLOCKS
+app.use("/", (err, req, res, next) => {
+  res.status(401).send("Unauthorized");
 });
 
 app.listen(3000, () => {
