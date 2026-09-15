@@ -8,7 +8,14 @@ const app = express();
 
 // app.use('/router',rh1,[rh2,rh3],rh4,rh5) // Grouping route handlers for a single route
 app.use(
-  "/test",
+  "/user",
+  (req, res, next) => {
+    next();
+  },
+);
+
+app.get(
+  "/user",
   (req, res, next) => {
     next();
   },
