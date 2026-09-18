@@ -2,15 +2,15 @@ const express = require("express");
 
 const app = express();
 const auth = require("./middleware/auth");
+const dbConnect = require("./config/database");
+
 // Hanlding error through try catch block
 app.get("/test", (req, res, next) => {
-try{
+  try {
     throw new Error("Unauthorized");
-
-}
-catch(err){
+  } catch (err) {
     res.status(401).send("Something went wrong");
-}
+  }
 });
 
 app.get("/admin", auth, (req, res, next) => {
@@ -26,6 +26,13 @@ app.use("/", (err, req, res, next) => {
   res.status(401).send("Unauthorized");
 });
 
-app.listen(3000, () => {
-  console.log("Server is running on port 3000");
-});
+dbConnect()
+  .then(() => {
+    console.log("Database connected successfully");
+    app.listen(3000, () => {
+      console.log("Server is running on port 3000");
+    });
+  })
+  .catch((err) => {
+    console.error("Error while connecting to database", err.message);
+  });
