@@ -4,26 +4,36 @@ const app = express();
 const auth = require("./middleware/auth");
 const dbConnect = require("./config/database");
 
-// Hanlding error through try catch block
-app.get("/test", (req, res, next) => {
-  try {
-    throw new Error("Unauthorized");
-  } catch (err) {
-    res.status(401).send("Something went wrong");
-  }
-});
+const User = require("./models/user");
 
-app.get("/admin", auth, (req, res, next) => {
-  res.send("Welcome to admin page");
-});
+// Midldlware helps to parse incoming request body to json object to access the json data in it
+app.use(express.json());
 
-app.get("/user", (req, res, next) => {
-  throw new Error("Unauthorized");
-});
+app.use("/test",(req,res)=>{
+  res.send("test route is working");
+})
 
-// wILD CARD ERROR HANLDING MIDDLEWARE WHEN WE HAVE MULTIPLE ROUTES AND WE WANT TO HANDLE ERROR WIHTOUT NO TRY , CATCH BLOCKS
-app.use("/", (err, req, res, next) => {
-  res.status(401).send("Unauthorized");
+app.post("/signup", async (req, res) => {
+  console.log("Request body:", req.body); // Log the request body to see what data is being sent
+  const userObject = {
+    firstName: req.body.firstName,
+    lastName: req.body.lastName,
+    email: req.body.email,
+    age: req.body.age,
+    gender: req.body.gender,
+  };
+
+  //Create a new user instance using the User model and passing userobject as an argument to the constructor. This will create a new user document in the database with the provided data.
+  const user = new User(userObject);
+
+  await user.save()
+  .then(()=>{
+    res.status(200).json({ message: "User created successfully" });
+  })
+  .catch((err) => {
+    res.status(400).json({ message: "Error creating user", error: err.message });
+  });
+
 });
 
 dbConnect()
