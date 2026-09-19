@@ -27,7 +27,8 @@ app.post("/signup", async (req, res) => {
   const user = new User(userObject);
 
   try {
-    await user.save()
+    await user
+      .save()
       .then(() => {
         res.status(200).json({ message: "User created successfully" });
       })
@@ -37,7 +38,79 @@ app.post("/signup", async (req, res) => {
           .json({ message: "Error creating user", error: err.message });
       });
   } catch (err) {
-    res.status(500).json({ message: "Internal server error", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: err.message });
+  }
+});
+
+// Get use by email or id
+app.get("/user", async (req, res) => {
+  const email = req.body.email;
+
+  //Find user by id more opimized than findOne({ email: email }) as it
+
+  // const id  = req.body.id;
+
+  // const user = await User.findById(id);
+
+  const user = await User.findOne({ email: email });
+
+  res.send(user);
+});
+
+app.get("/feed", async (req, res) => {
+  try {
+    //Get all users from the database using the User model's find method. This will return an array of user documents.
+    // Here we can also pass field names to filter the documents.
+    const users = await User.find();
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: "No users found" });
+    }
+
+    res.send(users);
+  } catch (err) {
+    res
+      .status(400)
+      .json({ message: "Error fetching users", error: err.message });
+  }
+});
+
+app.patch("/user", async (req, res) => {
+  try {
+    const id = req.body.id;
+    const updatedUser = req.body;
+
+    // Find the user by id and update it
+    const user = await User.findByIdAndUpdate(id, updatedUser, { new: true });
+
+    // Find the user by doucment field / id and udpate
+    // const user = await User.findOneAndUpdate({_id:id},updatedUser, {new:true})
+
+    res.status(200).json({ message: "User updated successfully", user });
+  } catch (err) {
+    res
+      .status(400)
+      .json({ message: "Error updating user", error: err.message });
+  }
+});
+
+app.delete("/user", async (req, res) => {
+  try {
+    // Find the user by first email match and delete it from the database using the User model's findOneAndDelete method. This will return the deleted user document.
+    const id = req.body.id;
+
+    const user = await User.findByIdAndDelete(id);
+
+    // const email = req.body.email;
+    // const user = await User.findOneAndDelete({email});
+
+    res.status(200).json({ message: "User deleted successfully", user });
+  } catch (err) {
+    res
+      .status(400)
+      .json({ message: "Error deleting user", error: err.message });
   }
 });
 
