@@ -9,10 +9,6 @@ const User = require("./models/user");
 // Midldlware helps to parse incoming request body to json object to access the json data in it
 app.use(express.json());
 
-app.use("/test", (req, res) => {
-  res.send("test route is working");
-});
-
 app.post("/signup", async (req, res) => {
   console.log("Request body:", req.body); // Log the request body to see what data is being sent
   const userObject = {
@@ -21,7 +17,14 @@ app.post("/signup", async (req, res) => {
     email: req.body.email,
     age: req.body.age,
     gender: req.body.gender,
+    about: req.body.about,
+    photoUrl: req.body.photoUrl,
+    skills: req.body.skills,
   };
+
+  if (userObject?.skills <= 5) {
+    throw new error("Skills should not be more than 5");
+  }
 
   //Create a new user instance using the User model and passing userobject as an argument to the constructor. This will create a new user document in the database with the provided data.
   const user = new User(userObject);
@@ -77,13 +80,30 @@ app.get("/feed", async (req, res) => {
   }
 });
 
-app.patch("/user", async (req, res) => {
+app.patch("/user/:userId", async (req, res) => {
   try {
-    const id = req.body.id;
+    const id = req.params?.userId;
     const updatedUser = req.body;
 
+    const allowedFields = ["skills", "about", "photoUrl"];
+    const isUserUpdateAllowed = Object.keys(updatedUser).every((key) => {
+     return allowedFields.includes(key);
+    });
+
+
+    if (!isUserUpdateAllowed) {
+      throw new Error("update not allowed");
+    }
+
+    if (updatedUser?.skills.length <= 5) {
+      throw new Error("Skills should not be more than 5");
+    }
+
     // Find the user by id and update it
-    const user = await User.findByIdAndUpdate(id, updatedUser, { new: true });
+    const user = await User.findByIdAndUpdate(id, updatedUser, {
+      new: true,
+      runValidators: true,
+    });
 
     // Find the user by doucment field / id and udpate
     // const user = await User.findOneAndUpdate({_id:id},updatedUser, {new:true})
