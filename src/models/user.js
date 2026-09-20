@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
 
+
 const userSchema = new mongoose.Schema(
   {
     firstName: {
@@ -23,6 +24,10 @@ const userSchema = new mongoose.Schema(
           throw new Error("Invalid email address" + value);
         }
       },
+    },
+    password:{
+      type: String,
+      required : true
     },
     age: {
       type: Number,

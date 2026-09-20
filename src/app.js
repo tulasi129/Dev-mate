@@ -3,31 +3,49 @@ const express = require("express");
 const app = express();
 const auth = require("./middleware/auth");
 const dbConnect = require("./config/database");
+const bcrypt = require("bcrypt");
 
 const User = require("./models/user");
-
+const {
+  userSignUpValidator,
+  userLoginValidator,
+} = require("./utlis/userValidator");
 // Midldlware helps to parse incoming request body to json object to access the json data in it
 app.use(express.json());
 
 app.post("/signup", async (req, res) => {
-  console.log("Request body:", req.body); // Log the request body to see what data is being sent
-  const userObject = {
-    firstName: req.body.firstName,
-    lastName: req.body.lastName,
-    email: req.body.email,
-    age: req.body.age,
-    gender: req.body.gender,
-    about: req.body.about,
-    photoUrl: req.body.photoUrl,
-    skills: req.body.skills,
-  };
+  userSignUpValidator(req.body);
 
-  if (userObject?.skills <= 5) {
+  const {
+    firstName,
+    lastName,
+    email,
+    password,
+    age,
+    gender,
+    about,
+    photoUrl,
+    skills,
+  } = req.body;
+
+  const hashePassword = await bcrypt.hash(password, 10);
+  console.log(hashePassword);
+
+  // eeor chekcing
+  if (skills <= 5) {
     throw new error("Skills should not be more than 5");
   }
 
   //Create a new user instance using the User model and passing userobject as an argument to the constructor. This will create a new user document in the database with the provided data.
-  const user = new User(userObject);
+  const user = new User({
+    firstName,
+    lastName,
+    email,
+    password: hashePassword,
+    age,
+    gender,
+    skills,
+  });
 
   try {
     await user
@@ -47,6 +65,27 @@ app.post("/signup", async (req, res) => {
   }
 });
 
+app.post("/login", async (req, res) => {
+  try {
+    userLoginValidator(req.body);
+
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email: email });
+    if (!user) {
+      throw new Error("Invalid credentials");
+    }
+    const passwordCompare = await bcrypt.compare(password, user?.password);
+
+    if (passwordCompare) {
+      res.send("Login Successful");
+    } else {
+      res.send("Invalid Password");
+    }
+  } catch (err) {
+    res.status(400).send("Something went wrong please try again!" + err);
+  }
+});
 // Get use by email or id
 app.get("/user", async (req, res) => {
   const email = req.body.email;
@@ -87,9 +126,8 @@ app.patch("/user/:userId", async (req, res) => {
 
     const allowedFields = ["skills", "about", "photoUrl"];
     const isUserUpdateAllowed = Object.keys(updatedUser).every((key) => {
-     return allowedFields.includes(key);
+      return allowedFields.includes(key);
     });
-
 
     if (!isUserUpdateAllowed) {
       throw new Error("update not allowed");
