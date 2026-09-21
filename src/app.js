@@ -4,14 +4,19 @@ const app = express();
 const auth = require("./middleware/auth");
 const dbConnect = require("./config/database");
 const bcrypt = require("bcrypt");
+const cookieParser = require("cookie-parser");
+const jwt = require("jsonwebtoken");
 
 const User = require("./models/user");
 const {
   userSignUpValidator,
   userLoginValidator,
 } = require("./utlis/userValidator");
+
 // Midldlware helps to parse incoming request body to json object to access the json data in it
 app.use(express.json());
+app.use(cookieParser());
+
 
 app.post("/signup", async (req, res) => {
   userSignUpValidator(req.body);
@@ -78,6 +83,11 @@ app.post("/login", async (req, res) => {
     const passwordCompare = await bcrypt.compare(password, user?.password);
 
     if (passwordCompare) {
+      const tokenGeneration = await jwt.sign({ _id: user.id }, "dev-mate", {
+        expiresIn: 60 * 60,
+      });
+      res.cookie("token", tokenGeneration);
+
       res.send("Login Successful");
     } else {
       res.send("Invalid Password");
@@ -86,91 +96,28 @@ app.post("/login", async (req, res) => {
     res.status(400).send("Something went wrong please try again!" + err);
   }
 });
-// Get use by email or id
-app.get("/user", async (req, res) => {
-  const email = req.body.email;
 
-  //Find user by id more opimized than findOne({ email: email }) as it
-
-  // const id  = req.body.id;
-
-  // const user = await User.findById(id);
-
-  const user = await User.findOne({ email: email });
-
-  res.send(user);
-});
-
-app.get("/feed", async (req, res) => {
+app.get("/profile", auth, async (req, res) => {
   try {
-    //Get all users from the database using the User model's find method. This will return an array of user documents.
-    // Here we can also pass field names to filter the documents.
-    const users = await User.find();
+    const user = req.user;
 
-    if (users.length === 0) {
-      return res.status(404).json({ message: "No users found" });
-    }
-
-    res.send(users);
+    res.send(user);
   } catch (err) {
-    res
-      .status(400)
-      .json({ message: "Error fetching users", error: err.message });
+    res.status(400).send("Something went wrong " + " : " + err);
   }
 });
 
-app.patch("/user/:userId", async (req, res) => {
+app.get("/sendProfile-connection", auth, async (req, res) => {
   try {
-    const id = req.params?.userId;
-    const updatedUser = req.body;
+    const user = req.user;
 
-    const allowedFields = ["skills", "about", "photoUrl"];
-    const isUserUpdateAllowed = Object.keys(updatedUser).every((key) => {
-      return allowedFields.includes(key);
-    });
-
-    if (!isUserUpdateAllowed) {
-      throw new Error("update not allowed");
-    }
-
-    if (updatedUser?.skills.length <= 5) {
-      throw new Error("Skills should not be more than 5");
-    }
-
-    // Find the user by id and update it
-    const user = await User.findByIdAndUpdate(id, updatedUser, {
-      new: true,
-      runValidators: true,
-    });
-
-    // Find the user by doucment field / id and udpate
-    // const user = await User.findOneAndUpdate({_id:id},updatedUser, {new:true})
-
-    res.status(200).json({ message: "User updated successfully", user });
+    res.send("Connection send successfully from " + user.firstName);
   } catch (err) {
-    res
-      .status(400)
-      .json({ message: "Error updating user", error: err.message });
+    
+    res.status(400).send("Something went wrong " + " : " + err);
   }
 });
 
-app.delete("/user", async (req, res) => {
-  try {
-    // Find the user by first email match and delete it from the database using the User model's findOneAndDelete method. This will return the deleted user document.
-    const id = req.body.id;
-
-    const user = await User.findByIdAndDelete(id);
-
-    // const email = req.body.email;
-    // const user = await User.findOneAndDelete({email});
-
-    res.status(200).json({ message: "User deleted successfully", user });
-  } catch (err) {
-    res
-      .status(400)
-      .json({ message: "Error deleting user", error: err.message });
-  }
-});
 
 dbConnect()
   .then(() => {
